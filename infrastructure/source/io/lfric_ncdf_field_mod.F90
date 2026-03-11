@@ -10,7 +10,8 @@ module lfric_ncdf_field_mod
   use constants_mod,       only: r_def, dp_native, i_def, str_def, str_long
   use lfric_ncdf_file_mod, only: lfric_ncdf_file_type
   use lfric_ncdf_dims_mod, only: lfric_ncdf_dims_type
-  use log_mod,             only: log_event, log_scratch_space, LOG_LEVEL_ERROR
+  use log_mod,             only: log_event, log_scratch_space,               &
+                                LOG_LEVEL_ERROR, LOG_LEVEL_TRACE
   use netcdf,              only: nf90_strerror, nf90_noerr, nf90_double,     &
                                  nf90_def_var, nf90_put_var, nf90_get_var,   &
                                  nf90_inq_varid, nf90_put_att, nf90_get_att, &
@@ -34,7 +35,10 @@ module lfric_ncdf_field_mod
 
   contains
 
-    procedure, public :: read_data
+    procedure, public :: read_data_1d
+    procedure, public :: read_data_2d
+    procedure, public :: read_data_3d
+    generic :: read_data => read_data_1d, read_data_2d, read_data_3d
     procedure, public :: write_data
     procedure, public :: set_char_attribute
     procedure, public :: get_char_attribute
@@ -83,6 +87,7 @@ function lfric_ncdf_field_constructor(name, file, dims) result(self)
     ierr = nf90_inq_varid(self%file%get_id(), name, self%varid)
 
     if (ierr /= nf90_noerr .and. file%get_io_mode() /= nf90_nowrite) then
+
       if (present(dims)) then
         ierr = nf90_def_var(self%file%get_id(), name, self%data_type, &
                           self%dimensions%get_id(), self%varid)
@@ -106,7 +111,7 @@ function lfric_ncdf_field_constructor(name, file, dims) result(self)
   !> @brief  Reads a variable's data from the NetCDF file.
   !>
   !> @param[out]  field_data  Field data read from the file
-  subroutine read_data(self, field_data)
+  subroutine read_data_1d(self, field_data)
 
     implicit none
 
@@ -117,6 +122,9 @@ function lfric_ncdf_field_constructor(name, file, dims) result(self)
     character(len=*), parameter :: routine = 'read_data'
     character(len=str_long)     :: cmess
 
+    write(log_scratch_space,'(A)') 'Read_data_1d: Reading '//trim(self%name)
+    call log_event( trim(log_scratch_space), LOG_LEVEL_TRACE )
+
     ierr = nf90_get_var(self%file%get_id(), self%varid, field_data(:))
 
     cmess = "Getting NetCDF variable with ID: " // trim(self%name)
@@ -124,7 +132,74 @@ function lfric_ncdf_field_constructor(name, file, dims) result(self)
 
     return
 
-  end subroutine read_data
+  end subroutine read_data_1d
+
+  !> @brief  Reads a variable's data from the NetCDF file.
+  !>
+  !> @param[out]  field_data  Field data read from the file
+  subroutine read_data_2d(self, field_data)
+
+    implicit none
+
+    class(lfric_ncdf_field_type), intent(in)  :: self
+    real(kind=r_def),             intent(out) :: field_data(:,:)
+
+    integer(kind=i_def)         :: ierr
+    character(len=*), parameter :: routine = 'read_data'
+    character(len=str_long)     :: cmess
+
+    write(log_scratch_space,'(A)') 'Read_data_2d, reading '//trim(self%name)
+    call log_event( trim(log_scratch_space), LOG_LEVEL_TRACE )
+
+    write(log_scratch_space,'(A, I0)') 'size(field_data,1) = ', size(field_data,1)
+    call log_event( trim(log_scratch_space), LOG_LEVEL_TRACE )
+    write(log_scratch_space,'(A, I0)') 'size(field_data,2) = ', size(field_data,2)
+    call log_event( trim(log_scratch_space), LOG_LEVEL_TRACE )
+
+    ierr = nf90_get_var(self%file%get_id(), self%varid, field_data(:,:),  &
+            start = (/1,1/), count = (/size(field_data,1), size(field_data,2)/))
+
+    cmess = "Getting NetCDF variable with ID: " // trim(self%name)
+    call check_err(ierr, routine, cmess)
+
+    return
+
+  end subroutine read_data_2d
+
+  !> @brief  Reads a variable's data from the NetCDF file.
+  !>
+  !> @param[out]  field_data  Field data read from the file
+  subroutine read_data_3d(self, field_data)
+
+    implicit none
+
+    class(lfric_ncdf_field_type), intent(in)  :: self
+    real(kind=r_def),             intent(out) :: field_data(:,:,:)
+
+    integer(kind=i_def)         :: ierr
+    character(len=*), parameter :: routine = 'read_data'
+    character(len=str_long)     :: cmess
+
+    write(log_scratch_space,'(A)') 'Read_data_3d, reading '//trim(self%name)
+    call log_event( trim(log_scratch_space), LOG_LEVEL_TRACE )
+
+    write(log_scratch_space,'(A, I0)') 'size(field_data,1) = ', size(field_data,1)
+    call log_event( trim(log_scratch_space), LOG_LEVEL_TRACE )
+    write(log_scratch_space,'(A, I0)') 'size(field_data,2) = ', size(field_data,2)
+    call log_event( trim(log_scratch_space), LOG_LEVEL_TRACE )
+    write(log_scratch_space,'(A, I0)') 'size(field_data,3) = ', size(field_data,3)
+    call log_event( trim(log_scratch_space), LOG_LEVEL_TRACE )
+
+    ierr = nf90_get_var(self%file%get_id(), self%varid, field_data(:,:,:), &
+            start = (/1,1,1/), count = &
+            (/size(field_data,1), size(field_data,2), size(field_data,3)/))
+
+    cmess = "Getting NetCDF variable with ID: " // trim(self%name)
+    call check_err(ierr, routine, cmess)
+
+    return
+
+  end subroutine read_data_3d
 
   !> @brief  Writes data to the NetCDF field.
   !>
