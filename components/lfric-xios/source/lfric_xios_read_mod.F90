@@ -14,6 +14,7 @@ module lfric_xios_read_mod
 
   use constants_mod,            only: i_def, l_def, str_def, r_def, rmdi, &
                                       LARGE_DP_NEGATIVE
+  use extrusion_mod,            only: TWOD, PRIME_EXTRUSION
   use lfric_xios_constants_mod, only: dp_xios
   use io_value_mod,             only: io_value_type
   use field_mod,                only: field_type, field_proxy_type
@@ -33,6 +34,7 @@ module lfric_xios_read_mod
   use lfric_xios_format_mod,    only: inverse_format_field
 
   use mesh_mod,                 only: mesh_type
+  use mesh_collection_mod,      only: mesh_collection
   use log_mod,                  only: log_event,         &
                                       log_scratch_space, &
                                       LOG_LEVEL_INFO,    &
@@ -277,6 +279,9 @@ subroutine read_field_time_var(xios_field_name, field_proxy, time_indices, time_
                       LOG_LEVEL_ERROR )
     end if
   else
+    if ( mesh%get_extrusion_id() == TWOD ) then
+      mesh = mesh_collection%get_mesh_variant( mesh, PRIME_EXTRUSION )
+    end if  
     if ( fs_id == W3 ) then
       call xios_get_domain_attr( trim(adjustl(mesh%get_mesh_name()))//"_face", ni=domain_size )
       call xios_get_axis_attr( 'vert_axis_half_levels', n_glo=vert_axis_size )
@@ -317,6 +322,7 @@ subroutine read_field_time_var(xios_field_name, field_proxy, time_indices, time_
 
   ! Incoming data is shaped with multi-data axis first, then time axis, so set
   ! up an array for each multi-data level
+  ! Note that this places a restriction on the format on some ancil files
   do i = 0, ndata - 1
 
     !Get first ndata slice - note the conversion from double precision to r_def
