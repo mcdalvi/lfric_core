@@ -281,7 +281,7 @@ subroutine read_field_time_var(xios_field_name, field_proxy, time_indices, time_
   else
     if ( mesh%get_extrusion_id() == TWOD ) then
       mesh => mesh_collection%get_mesh_variant( mesh, PRIME_EXTRUSION )
-    end if  
+    end if
     if ( fs_id == W3 ) then
       call xios_get_domain_attr( trim(adjustl(mesh%get_mesh_name()))//"_face", ni=domain_size )
       call xios_get_axis_attr( 'vert_axis_half_levels', n_glo=vert_axis_size )
