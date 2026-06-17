@@ -51,6 +51,7 @@ module driver_io_mod
     !> @brief Callback interface for bespoke IO configuration
     !> @param[in] modeldb  modeldb to be passed in at call site
     subroutine io_configuration_callback(modeldb)
+      import modeldb_type
       implicit none
       type(modeldb_type), intent(in) :: modeldb
     end subroutine io_configuration_callback
